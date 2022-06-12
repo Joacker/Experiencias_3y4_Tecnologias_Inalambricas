@@ -28,7 +28,7 @@ plot(d,Y,'c');grid on;
 plot(d,MetodosCuadrados(X,Y),'m');grid on;
 xlabel('Distance (m)'); ylabel('P_r (dBm)');
 title('Log Normal Shadowing Model');
-legend('Log normal shadowing','Friss model', 'Recibido');
+legend('Log normal shadowing','Friss model', 'Experiencia 1','Experiencia 2','Metodos Cuadrados');
 
 % y = mx + b
 % metodos de mínimos cuadrados
