@@ -15,9 +15,6 @@ Pr_shadow = Generate_PL_shadow(d,d0);
 
 Pr_Friss = Generate_Pr_friis(Pt_dBm,Gt_dBi,Gr_dBi,Generate_PLdo(d),L);
 
-%display(Pr_shadow)
-%display(Pr_Friss)
-%display(Pr_test)
 u = 21:1:49
 newD = [d,u]
 
