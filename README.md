@@ -1,4 +1,4 @@
-# lab3_Tecnologias_Inalambricas
+# Experiencias_3y4_Tecnologias_Inalambricas
 
 ```sh
 run test.m
