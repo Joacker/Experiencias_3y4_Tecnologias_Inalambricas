@@ -15,6 +15,9 @@ Pr_shadow = Generate_PL_shadow(d,d0);
 
 Pr_Friss = Generate_Pr_friis(Pt_dBm,Gt_dBi,Gr_dBi,Generate_PLdo(d),L);
 
+%display(Pr_shadow)
+%display(Pr_Friss)
+%display(Pr_test)
 u = 21:1:49
 newD = [d,u]
 
@@ -33,69 +36,160 @@ composeExp4 = exp4(:);
 % EXP3 + EXP4
 newArray = [Pr_test Y]' ;
 c = newArray(:);
+c2 = [c]';
 
-PL = logNormalShadowing(Pt_dBm,Gt_dBi,Gr_dBi,f,d0,d,L,sigma,n)
+PL = logNormalShadowing(Pt_dBm,Gt_dBi,Gr_dBi,f,d0,d,L,sigma,n);
 
 % Test Mid
 Mid = MidPoints(Y,Pr_test);
 
-%CDF
+% Pasar a veces los dbm
+v1 = ParseVeces(Pr_test);
+v2 = ParseVeces(Y);
+v3 = ParseVeces(c2);
+
+% Pasar a db las veces
+db1 = ParsedB(v1);
+db2 = ParsedB(v2);
+db3 = ParsedB(v3);
+
+% muestras con ubicaciones
+M1 = [d(:),v1(:)];
+M2 = [d(:),v2(:)];
+M3 = [newD(:), v3(:)];
+
+% Muestras concatenadas y generacion de rectas
+y1 = MeanSquareError(M1);
+y2 = MeanSquareError(M2);
+y3 = MeanSquareError(M3);
+
+% Estadisticas asociadas
+err1 = y1 - M1(:,2);
+err2 = y2 - M2(:,2);
+err3 = y3 - M3(:,2);
+
+test = [newD(:), err3(:)];
+
+% Paso a db en error
+nerr1 = ParsedB(err1);
+nerr2 = ParsedB(err2);
+nerr3 = ParsedB(err3);
+
+% Último ajuste de métodos cuadrados 
+a1 = MetodosCuadrados(d,ParsedB(y1));
+a2 = MetodosCuadrados(d,ParsedB(y2));
+a3 = MetodosCuadrados(newD,ParsedB(y3));
+
+% Último ajuste para pasar los imaginarios a reales
+werr1 = real(nerr1);
+werr2 = real(nerr2);
+werr3 = real(nerr3);
+
+% Media y desviación estandar exp3
+media1 = mean(werr1);
+desv1 = std(werr1);
+
+% Media y desviación estandar exp4
+media2 = mean(werr2);
+desv2 = std(werr2);
+
+% Media y desviación estandar exp3 + exp4
+media3 = mean(werr3);
+desv3 = std(werr3);
+
+% Medias
+display(media1)
+display(media2)
+display(media3)
+
+% Desviaciones Estandar
+display(desv1)
+display(desv2)
+display(desv3)
+
+% Plots
 figure;
-cdfplot(exp3(:));hold on;
-cdfplot(exp4(:));grid on;
-cdfplot(c(:));grid on;
-xlabel('Pr dbm'); ylabel('Probabilidad');
+cdfplot(werr1(:));hold on;
+cdfplot(werr2(:));grid on;
+cdfplot(werr3(:));grid on;
+xlabel('dB'); ylabel('Probabilidad');
 legend('Exp3','Exp4','Exp3 + Exp4');
 
 figure;
-plot(newD,MetodosCuadrados(newD,c),'g');hold on;
-plot(newD,MetodosCuadrados(newD,composeExp3),'b');grid on;
-plot(newD,MetodosCuadrados(newD,composeExp4),'r');grid on;
-xlabel('Distance (m)'); ylabel('Pr (dBm)');
-title('Log Normal Shadowing Model');
-legend('Exp3 + Exp4','Exp3','Exp4');
-
+cdfplot(werr1(:));hold on;
+xlabel('dB'); ylabel('Probabilidad');
+legend('Exp3');
 
 figure;
-%plot(d,PL,'b');hold on;
-%plot(d,Pr_Friss,'r');grid on;
-plot(d,Pr_test,'g');hold on;
-%plot(d,Mid,'k');grid on;
-plot(d,MetodosCuadrados(X,Mid),'m');grid on;
-plot(d,Y,'c');grid on;
+cdfplot(werr2(:));hold on;
+xlabel('dB'); ylabel('Probabilidad');
+legend('Exp4');
+
+figure;
+cdfplot(werr3(:));hold on;
+xlabel('dB'); ylabel('Probabilidad');
+legend('Exp3 + Exp4');
+
+figure;
+plot(d,a1,'b');hold on;
+plot(d,nerr1,'o');grid on;
+xlabel('Distance (m)'); ylabel('dB');
+title('MeanSquareError');
+legend('Exp3','error exp3');
+
+figure;
+plot(d,a2,'b');hold on;
+plot(d,nerr2,'o');grid on;
+xlabel('Distance (m)'); ylabel('dB');
+title('MeanSquareError');
+legend('Exp4','error exp4');
+
+figure;
+plot(newD,a3,'b');hold on;
+plot(newD,nerr3,'o');grid on;
+xlabel('Distance (m)'); ylabel('dB');
+title('MeanSquareError');
+legend('Exp3 + Exp4','error exp3 + exp4');
+
+figure;
+%plot(d,Pr_test,'g');hold on;
+%plot(d,MetodosCuadrados(d,Pr_test),'c');grid on;
+plot(newD,c2,'k');hold on;
+plot(newD,MetodosCuadrados(newD,c2),'c');grid on;
+%plot(d,Y,'c');grid on;
+%plot(d,MetodosCuadrados(d,Y),'k');grid on;
 xlabel('Distance (m)'); ylabel('Pr (dBm)');
-title('Log Normal Shadowing Model');
-legend('Exp 3',"Metodos Cuadrados",'Exp 4');
+title('Aplicación de Metodos de Cuadrados');
+legend('Exp 3 + Exp 4','Metodos Cuadrados');
 
-% Desviacion Estándar de Pr y de Y
-d1 = std(Pr_test,1);
-d2 = std(Y,1);
-disp("Desviación Estándar");
-display(d1);
-display(d2);
+function [y] = ParsedB(x)
+    size = length(x);
+    for i=1:size
+        y(i) = 10*log10(x(i));
+    end
+end
 
-% Varianza de Pr y de Y
-v1 = var(Pr_test,1);
-v2 = var(Y,1);
-disp("Varianza");
-%display(v1);
-%display(v2);
+function [y] = ParseVeces(x)
+    size = length(x);
+    for i=1:size
+        y(i) = 10^((x(i))/10);
+    end
+end
 
-% Media de Pr y de Y
-m1 = mean(Pr_test);
-m2 = mean(Y);
-disp("Media");
-%display(m1);
-%display(m2);
+function [y] = MeanSquareError(M)
+    n = length(M(:,1));
 
+    x_sum = sum(M(:,1));
+    y_sum = sum(M(:,2));
 
-% CDF para Pr_test
-Y_cdf1 = cdf('Normal',Pr_test,m1,d1);
-%display(Y_cdf1)
+    x2_sum = sum(M(:,1).^2);
+    xy_sum = sum(M(:,1).*M(:,2));
 
-% CDF para Y
-Y_cdf2 = cdf('Normal',Y,m2,d2);
-%display(Y_cdf2)
+    a = (n*xy_sum - (x_sum*y_sum))/(n*x2_sum - (x_sum^2));
+    b = (y_sum/n) - (a.*(x_sum/n));
+
+    y = M(:,1).*a + b;
+end
 
 function [MidArray] = ExtractMidPoints(x)
     size = length(x);
@@ -135,6 +229,7 @@ function [objectiveFunction] = MetodosCuadrados(x,y)
     end
     m = (sumXY - ((sumX * sumY)/size)) / (sumxpow2 - ((sumX)^2)/size);
     b = (sumY / size) - m*(sumX / size);
+    display(m)
     for i=1:size
         objectiveFunction(i) = m*x(i) + b;
     end
@@ -164,7 +259,7 @@ function PL_shadow = Generate_PL_shadow(array,d0)
     po = 20*log((4*pi*d0/lambda));
     X = 2*randn(1,numel(array));
     size = length(array);
-    PL_shadow = po + (20*log10(array/d0)) + X;
+    PL_shadow = po + (20*log10(array/d0));
 end
 
 function PLdo = Generate_PLdo(array)
@@ -188,4 +283,3 @@ function Yprima = Intercalate(Exp1,Exp2)
         end
     end
 end
-
